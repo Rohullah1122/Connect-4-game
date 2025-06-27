@@ -1,0 +1,143 @@
+    class ComputerPlayer : Player
+    {
+        private Random random;
+
+        public ComputerPlayer(string name, char symbol) : base(name, symbol)
+        {
+            random = new Random();
+        }
+
+        public int ChooseColumn(Board board)
+        {
+            List<int> availableCols = new List<int>();
+            for (int col = 0; col < board.Cols; col++)
+            {
+                if (board.IsColumnAvailable(col))
+                    availableCols.Add(col);
+            }
+
+            if (availableCols.Count == 0)
+                return -1;
+
+            return availableCols[random.Next(availableCols.Count)];
+        }
+    }
+
+    class ConnectFourGame
+    {
+        private Board board;
+        private Player player1;
+        private Player player2;
+        private Player currentPlayer;
+        private bool vsComputer = false;
+        private ComputerPlayer computer;
+
+        public void Start()
+        {
+            board = new Board();
+
+            Console.WriteLine("Choose mode:\n1. Two Players\n2. Play vs Computer");
+            string mode = Console.ReadLine();
+            vsComputer = mode.Trim() == "2";
+
+            Console.Write("Enter name for Player 1 (X): ");
+            string name1 = Console.ReadLine();
+            player1 = new Player(string.IsNullOrWhiteSpace(name1) ? "Player 1" : name1, 'X');
+
+            if (vsComputer)
+            {
+                computer = new ComputerPlayer("Computer", 'O');
+                player2 = computer;
+            }
+            else
+            {
+                Console.Write("Enter name for Player 2 (O): ");
+                string name2 = Console.ReadLine();
+                player2 = new Player(string.IsNullOrWhiteSpace(name2) ? "Player 2" : name2, 'O');
+            }
+
+            currentPlayer = player1;
+
+            while (true)
+            {
+                board.Display();
+                int col;
+
+                if (vsComputer && currentPlayer == computer)
+                {
+                    Console.WriteLine($"{currentPlayer.Name}'s turn ({currentPlayer.Symbol}): Thinking...");
+                    Thread.Sleep(1000);
+                    col = computer.ChooseColumn(board);
+                }
+                else
+                {
+                    Console.WriteLine($"{currentPlayer.Name}'s turn ({currentPlayer.Symbol}): Choose column (0-{board.Cols - 1}): ");
+                    try
+                    {
+                        col = int.Parse(Console.ReadLine());
+                        if (col < 0 || col >= board.Cols)
+                        {
+                            Console.WriteLine("Invalid column! Press any key...");
+                            Console.ReadKey();
+                            continue;
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Invalid input! Press any key...");
+                        Console.ReadKey();
+                        continue;
+                    }
+                }
+
+                if (!board.DropDisc(col, currentPlayer.Symbol))
+                {
+                    if (!(vsComputer && currentPlayer == computer))
+                    {
+                        Console.WriteLine("Try again. Press any key...");
+                        Console.ReadKey();
+                    }
+                    continue;
+                }
+
+                if (board.CheckWin(currentPlayer.Symbol))
+                {
+                    board.Display();
+                    Console.WriteLine($"🎉 {currentPlayer.Name} wins!");
+                    break;
+                }
+
+                if (board.IsFull())
+                {
+                    board.Display();
+                    Console.WriteLine("It's a draw!");
+                    break;
+                }
+
+                currentPlayer = currentPlayer == player1 ? player2 : player1;
+            }
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            while (true)
+            {
+                ConnectFourGame game = new ConnectFourGame();
+                game.Start();
+
+                Console.Write("\nDo you want to play again? (y/n): ");
+                string input = Console.ReadLine().Trim().ToLower();
+
+                if (input != "y")
+                {
+                    Console.WriteLine("Thanks for playing! 👋");
+                    break;
+                }
+                Console.Clear();
+            }
+        }
+    }
+}
